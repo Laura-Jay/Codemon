@@ -1,12 +1,11 @@
 
 /*
-current video position: 3hrs:26
-improvements: either make a new map or redraw the boundary to prevent overlaps
 current plan: just re-export the collision JSON object to include a backborder to the platue
 everything else looks pretty clean at -10 
-
+re-export foreground objects to add plateu tree
 */
 
+//set up screen area
 const canvas = document.querySelector('canvas');
 const context = canvas.getContext('2d')
 
@@ -14,11 +13,13 @@ canvas.width = 1024
 canvas.height = 576
 
 // 70 is the number of horizontal tiles on the map
+//convert JSON into array of arrays of length 70 to configure data to align with cavas dimensions
 const collisionsMap = []
 for (let i = 0; i< collisions.length; i+= 70){
     collisionsMap.push(collisions.slice(i, i+70))
 }
 
+//convert JSON into array of arrays of length 70 to configure data to align with cavas dimensions
 const battleZonesMap = []
 for (let i = 0; i< battleZonesData.length; i+= 70){
     battleZonesMap.push(battleZonesData.slice(i, i+70))
@@ -31,6 +32,7 @@ const offset = {
     y: -1000
 }
 
+//if there is a red tile create a new boundary object and push it into the boundaries array
 collisionsMap.forEach((row, i) => {
     row.forEach((symbol, j) => {
         if (symbol === 1025)
@@ -62,8 +64,6 @@ battleZonesMap.forEach((row, i) => {
 })
 
 
-
-
 const image = new Image()
 image.src='/images/mainMapScaled.png'
 
@@ -82,7 +82,7 @@ playerLeftImage.src='./images/playerLeft.png'
 const playerRightImage = new Image()
 playerRightImage.src='./images/playerRight.png'
 
-
+//create player avatar object 
 const player = new Sprite({
     position: {
         x: canvas.width / 2 - 192 / 4 / 2,
@@ -90,7 +90,8 @@ const player = new Sprite({
     },
     image: playerDownImage,
     frames: {
-        max: 4
+        max: 4,
+        hold: 10
     },
     sprites: {
         up: playerUpImage,
@@ -101,6 +102,7 @@ const player = new Sprite({
     }
 })
 
+//create background object
 const background = new Sprite({
     position: {
     x: offset.x,
@@ -109,6 +111,7 @@ const background = new Sprite({
     image: image
 })
 
+//create foreground object
 const foreground = new Sprite({
     position: {
     x: offset.x,
@@ -117,6 +120,7 @@ const foreground = new Sprite({
     image: foregroundImage
 })
 
+//set keys.pressed = false on load
 const keys = {
     w: {pressed: false},
     a: {pressed: false},
@@ -124,9 +128,11 @@ const keys = {
     d: {pressed: false}
 }
 
+//items that should move with the background (everything except player)
 const movables = [background, ...boundaries, foreground, ...battleZones]
 
 //remove the -numbers if you re-do map, this is just to allow moving through narrow zones 
+//function to determine if player dimensions overlap with collision boundaries 
 function rectangularCollision({rectangle1, rectangle2}) {
     return (
         rectangle1.position.x + rectangle1.width -10 >= rectangle2.position.x && 
@@ -136,10 +142,12 @@ function rectangularCollision({rectangle1, rectangle2}) {
     )
 }
 
+//set battle = false on load 
 const battle = {
     initiated: false
 }
 
+// animate top down view
 function animate() {
     const animationId = window.requestAnimationFrame(animate)
     background.draw()
@@ -155,8 +163,9 @@ function animate() {
     foreground.draw()
 
     let moving = true
-    player.moving = false
+    player.animate = false
 
+    //early return if battle starts to prevent player movement
     if (battle.initiated) return
 
     if (keys.w.pressed || keys.a.pressed || keys.s.pressed || keys.d.pressed ) {
@@ -183,9 +192,8 @@ function animate() {
                 overLappingArea > (player.width * player.height)/2
                 && Math.random() < 0.05 // this determines frequency of battles
             ){
-                console.log('activate battle')
-
-                //deactivate current animation loop
+                //start battle sequence 
+                //deactivate current top-down animation loop
                 window.cancelAnimationFrame(animationId)
 
                 battle.initiated = true
@@ -216,8 +224,9 @@ function animate() {
         }
     }
 
+    //prevent player moving in current direction 3 pixels before collision with collision tile boundary
     if (keys.w.pressed && lastKey === 'w') {
-        player.moving = true
+        player.animate = true
         player.image = player.sprites.up
         //collision tiles detection
         for (let i = 0; i < boundaries.length; i++){
@@ -241,7 +250,7 @@ function animate() {
             movable.position.y+= 3
         })
     } else if (keys.s.pressed && lastKey === 's') {
-        player.moving = true
+        player.animate = true
         player.image = player.sprites.down
         for (let i = 0; i < boundaries.length; i++){
             const boundary = boundaries[i]
@@ -263,7 +272,7 @@ function animate() {
         movable.position.y-= 3
     })}
     else if (keys.a.pressed && lastKey === 'a') {
-        player.moving = true
+        player.animate = true
         player.image = player.sprites.left
         for (let i = 0; i < boundaries.length; i++){
             const boundary = boundaries[i]
@@ -285,7 +294,7 @@ function animate() {
         movable.position.x+= 3
     })}
     else if (keys.d.pressed && lastKey === 'd') { 
-        player.moving = true
+        player.animate = true
         player.image = player.sprites.right
         for (let i = 0; i < boundaries.length; i++){
             const boundary = boundaries[i]
@@ -309,6 +318,7 @@ function animate() {
 }
 animate()
 
+// create battle background object 
 const battleBackgroundImage = new Image()
 battleBackgroundImage.src="/images/battleBackground.png"
 const battleBackground = new Sprite({
@@ -318,11 +328,69 @@ const battleBackground = new Sprite({
     },
     image: battleBackgroundImage
 })
+
+//create opponent sprite object
+const draggleImage = new Image()
+draggleImage.src="/images/draggleSprite.png"
+const draggle = new Sprite( {
+    position: {
+        x: 800,
+        y: 100
+    },
+    image: draggleImage,
+    frames: {
+        max: 4,
+        hold: 30
+    },
+    animate: true,
+    isEnemy: true
+})
+
+//create player codemon sprite object
+const embyImage = new Image()
+embyImage.src="/images/embySprite.png"
+const emby = new Sprite( {
+    position: {
+        x: 280,
+        y: 325
+    },
+    image: embyImage,
+    frames: {
+        max: 4,
+        hold: 30
+    },
+    animate: true
+})
+
+// render attack spite animations e.g. fireball 
+const renderedSprites = []
 function animateBattle() { 
     window.requestAnimationFrame(animateBattle)
     battleBackground.draw()
-}
+    draggle.draw()
+    emby.draw()
 
+    renderedSprites.forEach((sprite) => {
+        sprite.draw()
+    })
+}
+//animate 
+// if (battle.initiated) animateBattle()
+animateBattle()  //remove after testing battle sequence 
+
+//event listeners for attack buttons 
+document.querySelectorAll('button'). forEach(button => {
+    button.addEventListener('click', (event) => {
+        const slectedAttack = attacks[event.currentTarget.innerHTML]
+        emby.attack({ 
+            attack: slectedAttack,
+            recipient: draggle,
+            renderedSprites: renderedSprites
+        })
+    })
+})
+
+//event listeners for player movement
 let lastKey = ''
 window.addEventListener('keydown', (event) => {
     switch (event.key){
