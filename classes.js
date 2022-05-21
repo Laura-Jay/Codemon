@@ -21,7 +21,7 @@ class Sprite {
         frames = { max: 1, hold: 10}, 
         sprites, 
         animate = false,
-        isEnemy = false
+        rotation = 0,
      }) {
 
         this.position = position
@@ -35,12 +35,15 @@ class Sprite {
         this.animate = animate
         this.sprites = sprites
         this.opacity = 1
-        this.health = 100
-        this.isEnemy = this.isEnemy
+        this.rotation = rotation
+       
     }
 
     draw() {
         context.save()
+        context.translate(this.position.x + this.width/2, this.position.y + this.height/2)
+        context.rotate(this.rotation) 
+        context.translate(-this.position.x - this.width/2, -this.position.y - this.height/2)
         context.globalAlpha = this.opacity
         context.drawImage(
             this.image, 
@@ -67,9 +70,48 @@ class Sprite {
             else this.frames.val = 0
         }
     }
+}
 
+//extends gives all properties of the class referenced 
+class Monster extends Sprite {
+
+    constructor({
+        position, 
+        image, 
+        frames = { max: 1, hold: 10}, 
+        sprites, 
+        animate = false,
+        rotation = 0,
+        isEnemy = false,
+        name,
+        attacks
+    }) {
+        super({
+            position, 
+            image, 
+            frames, 
+            sprites,
+            animate,
+            rotation
+        })
+        this.health = 100
+        this.isEnemy = isEnemy
+        this.name = name
+        this.attacks = attacks
+    }
     //animate attacks 
     attack({attack, recipient, renderedSprites}) {
+        document.querySelector('#dialougeBox').style.display = 'block'
+        document.querySelector('#dialougeBox').innerHTML = this.name + ' used ' + attack.name
+
+        let healthBar = '#enemyHealthBar'
+        if (this.isEnemy) healthBar = '#playerHealthBar'
+
+        let rotation = 1 // 1 radian
+        if (this.isEnemy) rotation = -2.5
+
+        this.health -= attack.damage 
+
         switch (attack.name) {
             case 'Ember':
                 const emberImage = new Image()
@@ -85,29 +127,52 @@ class Sprite {
                         max: 4, 
                         hold: 10
                     },
-                    animate: true
+                    animate: true,
+                    rotation: rotation
                 })
-                renderedSprites.push(ember)
-
+                //start rendering ember sprite
+                renderedSprites.splice(1,0, ember)
+                
+                //ember spite path from player monster to enemy monster
                 gsap.to(ember.position, {
                     x: recipient.position.x,
                     y: recipient.position.y,
                     onComplete: () => {
-                        renderedSprites.pop()
+
+                        //Enemy gets hit 
+
+                        //reduce enemy health bar
+                        gsap.to(healthBar, {
+                            width: this.health - attack.damage + '%'
+                        })
+
+                        //attack hit animation
+
+                        //shake enemy
+                        gsap.to(recipient.position, {
+                            x: recipient.position.x + 10,
+                            yoyo: true,
+                            repeat: 5,
+                            duration: 0.08
+                        })
+                        //flicker enemy 
+                        gsap.to(recipient, {
+                            opacity: 0,
+                            repeat: 5,
+                            yoyo: true,
+                            duration: 0.08
+                        })
+                        //stop rendering ember sprite
+                        renderedSprites.splice(1,1)
                     }
                 })
 
             break;
             case 'Tackle':
-                const timeline = gsap.timeline()
-
-                this.health -= attack.damage 
+                const timeline = gsap.timeline() 
         
                 let movementDistance = 20
                 if (this.isEnemy) movementDistance = -20
-        
-                let healthBar = '#enemyHealthBar'
-                if (this.isEnemy) healthBar = '#playerHealthBar'
         
                 timeline.to(this.position, {
                     x: this.position.x -movementDistance,  
@@ -115,11 +180,15 @@ class Sprite {
                     x: this.position.x + movementDistance * 2,
                     duration: 0.1,
                     onComplete:() => {
+
                         //Enemy gets hit 
+
+                        //reduce enemy health bar
                         gsap.to(healthBar, {
                             width: this.health - attack.damage + '%'
                         })
-        
+
+                        //attack hit animation
                         gsap.to(recipient.position, {
                             x: recipient.position.x + 10,
                             yoyo: true,
