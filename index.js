@@ -168,6 +168,7 @@ function animate() {
     //early return if battle starts to prevent player movement
     if (battle.initiated) return
 
+   
     if (keys.w.pressed || keys.a.pressed || keys.s.pressed || keys.d.pressed ) {
          //battlezone detection
          for (let i = 0; i < battleZones.length; i++){
@@ -196,6 +197,9 @@ function animate() {
                 //deactivate current top-down animation loop
                 window.cancelAnimationFrame(animationId)
 
+                audio.Map.stop()
+                audio.InitBattle.play()
+                audio.Battle.play()
                 battle.initiated = true
 
                 //select html object and properties to animate with library
@@ -210,6 +214,7 @@ function animate() {
                             duration: 0.4,
                             onComplete() {
                                 // activate a new animation loop
+                                initBattle()
                                 animateBattle()
                                 gsap.to('#overlappingDiv', {
                                     opacity: 0,
@@ -249,74 +254,75 @@ function animate() {
         movables.forEach((movable) => {
             movable.position.y+= 3
         })
-    } else if (keys.s.pressed && lastKey === 's') {
-        player.animate = true
-        player.image = player.sprites.down
-        for (let i = 0; i < boundaries.length; i++){
-            const boundary = boundaries[i]
-            if ( 
-                rectangularCollision({
-                rectangle1: player,
-                rectangle2: {...boundary, position: {
-                    x: boundary.position.x,
-                    y: boundary.position.y -3
-                }}
-                })
-            ){
-               moving = false
-               break 
+        } else if (keys.s.pressed && lastKey === 's') {
+            player.animate = true
+            player.image = player.sprites.down
+            for (let i = 0; i < boundaries.length; i++){
+                const boundary = boundaries[i]
+                if ( 
+                    rectangularCollision({
+                    rectangle1: player,
+                    rectangle2: {...boundary, position: {
+                        x: boundary.position.x,
+                        y: boundary.position.y -3
+                    }}
+                    })
+                ){
+                moving = false
+                break 
             }
         }
         if (moving)
         movables.forEach((movable) => {
         movable.position.y-= 3
-    })}
-    else if (keys.a.pressed && lastKey === 'a') {
-        player.animate = true
-        player.image = player.sprites.left
-        for (let i = 0; i < boundaries.length; i++){
-            const boundary = boundaries[i]
-            if ( 
-                rectangularCollision({
-                rectangle1: player,
-                rectangle2: {...boundary, position: {
-                    x: boundary.position.x + 3,
-                    y: boundary.position.y 
-                }}
-                })
-            ){
-               moving = false
-               break 
+        })}
+        else if (keys.a.pressed && lastKey === 'a') {
+            player.animate = true
+            player.image = player.sprites.left
+            for (let i = 0; i < boundaries.length; i++){
+                const boundary = boundaries[i]
+                if ( 
+                    rectangularCollision({
+                    rectangle1: player,
+                    rectangle2: {...boundary, position: {
+                        x: boundary.position.x + 3,
+                        y: boundary.position.y 
+                    }}
+                    })
+                ){
+                moving = false
+                break 
+                }
             }
-        }
-        if (moving)
-        movables.forEach((movable) => {
-        movable.position.x+= 3
-    })}
-    else if (keys.d.pressed && lastKey === 'd') { 
-        player.animate = true
-        player.image = player.sprites.right
-        for (let i = 0; i < boundaries.length; i++){
-            const boundary = boundaries[i]
-            if ( 
-                rectangularCollision({
-                rectangle1: player,
-                rectangle2: {...boundary, position: {
-                    x: boundary.position.x -3,
-                    y: boundary.position.y
-                }}
-                })
-            ){
-               moving = false
-               break 
+            if (moving)
+            movables.forEach((movable) => {
+            movable.position.x+= 3
+        })}
+        else if (keys.d.pressed && lastKey === 'd') { 
+            player.animate = true
+            player.image = player.sprites.right
+            for (let i = 0; i < boundaries.length; i++){
+                const boundary = boundaries[i]
+                if ( 
+                    rectangularCollision({
+                    rectangle1: player,
+                    rectangle2: {...boundary, position: {
+                        x: boundary.position.x -3,
+                        y: boundary.position.y
+                    }}
+                    })
+                ){
+                moving = false
+                break 
+                }
             }
-        }
-        if (moving)
-        movables.forEach((movable) => {
-        movable.position.x-= 3
-    })}
+            if (moving)
+            movables.forEach((movable) => {
+            movable.position.x-= 3
+        })
+    }
 }
-animate()
+// animate()
 
 //event listeners for player movement
 let lastKey = ''
@@ -353,5 +359,13 @@ window.addEventListener('keyup', (event) => {
         break
         case 'd':
         keys.d.pressed = false
+    }
+})
+
+let clicked = false
+addEventListener('click', () => {
+    if (!clicked) {
+        audio.Map.play() 
+        clicked = true   
     }
 })
