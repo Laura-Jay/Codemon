@@ -1,0 +1,8 @@
+ Add additional attacks
+ Create an enemy monsters array that randomises enemy encounters 
+ Level up player monster on fights
+ Re-import foreground / re-do map with double width paths everywhere to prevent collisions when walking 
+ Add healing 
+ Add additional monsters 
+ Add coding questions to attack
+ Find more sprites
