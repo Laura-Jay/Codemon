@@ -13,9 +13,15 @@ const context = canvas.getContext('2d')
 canvas.width = 1024
 canvas.height = 576
 
+// 70 is the number of horizontal tiles on the map
 const collisionsMap = []
 for (let i = 0; i< collisions.length; i+= 70){
     collisionsMap.push(collisions.slice(i, i+70))
+}
+
+const battleZonesMap = []
+for (let i = 0; i< battleZonesData.length; i+= 70){
+    battleZonesMap.push(battleZonesData.slice(i, i+70))
 }
 
 const boundaries = []
@@ -38,6 +44,25 @@ collisionsMap.forEach((row, i) => {
         )
     })
 })
+
+const battleZones = []
+
+battleZonesMap.forEach((row, i) => {
+    row.forEach((symbol, j) => {
+        if (symbol === 1025)
+        battleZones.push(
+            new Boundary({
+                position: {
+                 x: j * Boundary.width + offset.x,
+                 y: i * Boundary.height + offset.y
+                }
+            })
+        )
+    })
+})
+
+
+
 
 const image = new Image()
 image.src='/images/mainMapScaled.png'
@@ -99,7 +124,7 @@ const keys = {
     d: {pressed: false}
 }
 
-const movables = [background, ...boundaries, foreground]
+const movables = [background, ...boundaries, foreground, ...battleZones]
 
 //remove the -numbers if you re-do map, this is just to allow moving through narrow zones 
 function rectangularCollision({rectangle1, rectangle2}) {
@@ -110,6 +135,11 @@ function rectangularCollision({rectangle1, rectangle2}) {
         rectangle1.position.y + rectangle1.height >= rectangle2.position.y 
     )
 }
+
+const battle = {
+    initiated: false
+}
+
 function animate() {
     window.requestAnimationFrame(animate)
     background.draw()
@@ -117,14 +147,52 @@ function animate() {
         boundary.draw()
 
     })
+    battleZones.forEach(battleZone => {
+        battleZone.draw()
+
+    })
     player.draw()
     foreground.draw()
 
     let moving = true
     player.moving = false
+
+    if (battle.initiated) return
+
+    if (keys.w.pressed || keys.a.pressed || keys.s.pressed || keys.d.pressed ) {
+         //battlezone detection
+         for (let i = 0; i < battleZones.length; i++){
+            const battleZone = battleZones[i]
+            const overLappingArea =
+                ( Math.min(
+                    player.position.x + player.width,
+                    battleZone.position.x + battleZone.width
+                        )  -
+                    Math.max(player.position.x, battleZone.position.x)) * 
+                ( Math.min(
+                    player.position.y + player.height,
+                    battleZone.position.y + battleZone.height
+                        ) -
+                    Math.max(player.position.y, battleZone.position.y))
+            if ( 
+                rectangularCollision({
+                rectangle1: player,
+                rectangle2: battleZone
+                }) &&
+                overLappingArea > (player.width * player.height)/2
+                && Math.random() < 0.03
+            ){
+                console.log('activate battle')
+                battle.initiated = true
+               break 
+            }
+        }
+    }
+
     if (keys.w.pressed && lastKey === 'w') {
         player.moving = true
         player.image = player.sprites.up
+        //collision tiles detection
         for (let i = 0; i < boundaries.length; i++){
             const boundary = boundaries[i]
             if ( 
@@ -140,6 +208,7 @@ function animate() {
                break 
             }
         }
+
         if (moving)
         movables.forEach((movable) => {
             movable.position.y+= 3

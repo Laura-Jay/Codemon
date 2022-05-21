@@ -9,7 +9,7 @@ class Boundary {
 
     draw() {
         //to make collision map transparent change end val of fillStyle to 0, to see use 0.2
-        context.fillStyle = 'rgba(255,0,0, 0'
+        context.fillStyle = 'rgba(255,0,0, 0.2'
         context.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
 }
