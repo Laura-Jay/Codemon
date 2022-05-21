@@ -147,7 +147,7 @@ class Monster extends Sprite {
                         audio.EmberHit.play()
                         //reduce enemy health bar
                         gsap.to(healthBar, {
-                            width: recipient.health - attack.damage + '%'
+                            width: recipient.health + '%'
                         })
 
                         //attack hit animation
@@ -190,7 +190,7 @@ class Monster extends Sprite {
                         audio.TackleHit.play()
                         //reduce enemy health bar
                         gsap.to(healthBar, {
-                            width: recipient.health - attack.damage + '%'
+                            width: recipient.health + '%'
                         })
 
                         //attack hit animation
